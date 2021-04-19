@@ -83,30 +83,7 @@ class SimplestModelAlternate(model.Model):
 
 
 
-def main():
-    import matplotlib.pyplot as plt
 
-    crc = SimplestModel(1, 0.9, 0.1, 0.01, 100, 0, 0)
-    maxTime = 20
-
-
-
-    timeData = []
-    goData = []
-    growData = []
-    goneData = []
-
-    while crc.get_time() < maxTime:
-        timeData.append(crc.get_time())
-        growData.append(crc.get_population(0).get_size())
-        goData.append(crc.get_population(1).get_size())
-        goneData.append(crc.get_population(2).get_size())
-
-        if crc.get_total_rate() == 0:
-            print('populations all extinct')
-            break
-
-        crc.update()
 
 
 
@@ -123,5 +100,3 @@ def main():
     growAx.legend()
 
     plt.show()
-if __name__ == "__main__":
-    main()
