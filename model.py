@@ -5,9 +5,14 @@ import math
 # then add events to populations, combine populations into model.
 
 
+# TODO: move history from model to population. time history will be stored in
+# the model while population history will be stored in population. I forget why
+# I want that but it was important to me at some point for some reason.
+
 class Population:
 
-# a population is a cell type. has a size (number of cells) and possible events (birth, death, transition)
+    # a population is a cell type. has a size (number of cells) and possible
+    # events (birth, death, transition)
 
     def __init__(self, count):
         self.count = count
@@ -33,6 +38,8 @@ class Population:
 
 class Event:
 
+    # an event is something that happens -- a birth, a death, a cell type
+    # change are all examples
     def __init__(self, populations, changes, rate):
         self.populations = populations
         self.changes = changes
@@ -47,8 +54,12 @@ class Event:
         return self.rate
 
 class Model:
+    # a model combines populations and events with their history and can run
+    # a stochastic simulation
 
-    #constructor - Models contain populations, a current time, and a history of their past.
+    # constructor - Models contain populations, a current time, and a history
+    # of their past.
+
     def __init__(self, pops):
 
         self.populations = pops
@@ -58,7 +69,7 @@ class Model:
             self.history.append([])
 
 
-    #informative functions
+    #informative functions:
     def get_population(self, i):
         return self.populations[i]
     def get_time(self):
@@ -76,17 +87,21 @@ class Model:
 
 
 
-    #functions for changing/creating the model
-    def add_population(self, pop):
-        self.populations.append(pop) #currently broken because no history!
+    # functions for changing/creating the model:
+    def add_population(self, pop): # currently broken because no history!
+    # this will eventually be fixed by putting history in population.
+        self.populations.append(pop)
 
 
 
 
-    #functions for updating the model
+
+    # functions for updating the model:
     def get_waiting_time(self):
         r = random.random()
         return math.log(r) * (-1) / self.get_total_rate()
+
+
     def update_history(self):
 
 
@@ -118,6 +133,11 @@ class Model:
             r -= event.get_rate()
 
         print("you should never see this")
+
+    def get_random_event(self): #TODO: this will simplify update(self)
+        # but is not currently necessary - just will improve readability
+        pass
+
     def run(self, duration):
 
 
