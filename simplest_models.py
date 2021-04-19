@@ -1,4 +1,5 @@
 import model
+import matplotlib.pyplot as plt
 
 #in this model, we have three types of cells - "go" "grow" and "gone"
 #all have the same birthrate and same deathrate
@@ -74,29 +75,3 @@ class SimplestModelAlternate(model.Model):
         gonePop.add_event(goneDeath)
 
         self = super().__init__([growPop, goPop, gonePop])
-
-    pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    growFigure, growAx = plt.subplots()
-    growAx.plot(timeData, growData, label = 'grow')
-
-    growAx.plot(timeData, goData, label = 'go')
-    growAx.plot(timeData, goneData, label = 'gone')
-    growAx.legend()
-
-    plt.show()

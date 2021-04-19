@@ -101,6 +101,26 @@ class Model:
         r = random.random()
         return math.log(r) * (-1) / self.get_total_rate()
 
+    def get_random_event(self):
+
+        r = random.random()*self.get_total_rate()
+
+
+        for pop in self.populations:
+            if r <= pop.get_total_rate():
+                popWithEvent = pop
+                break
+            r -= pop.get_total_rate()
+
+        r = r / popWithEvent.get_size()
+
+        for event in popWithEvent.events:
+            if r <= event.get_rate():
+                return event
+            r -= event.get_rate()
+
+        
+        print("if you see this something is broken")
 
     def update_history(self):
 
@@ -108,35 +128,20 @@ class Model:
         self.history[0].append(self.get_time())
         for i in range(0, self.get_number_of_populations()):
             self.history[i + 1].append(self.get_population(i).get_size())
+
     def update(self):
 
         self.update_history()
 
         self.time += self.get_waiting_time()
 
-        r = random.random()*self.get_total_rate()
-
-        for pop in self.populations: #figure out which population has the event
-            popRate = pop.get_total_rate()
-            if r <= popRate:
-                popWithEvent = pop
-                break
-            r -= popRate
+        self.get_random_event().implement()
 
 
-        r = r / popWithEvent.get_size()
 
-        for event in popWithEvent.events:
-            if r <= event.get_rate():
-                event.implement()
-                return
-            r -= event.get_rate()
 
-        print("you should never see this")
 
-    def get_random_event(self): #TODO: this will simplify update(self)
-        # but is not currently necessary - just will improve readability
-        pass
+
 
     def run(self, duration):
 
