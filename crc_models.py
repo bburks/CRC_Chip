@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 class SimplestModel(model.Model):
     def __init__(self, birthrate, deathrate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone):
 
-        growPop = model.Population(startingGrow)
-        goPop = model.Population(startingGo)
-        gonePop = model.Population(startingGone)
+        growPop = model.Population(startingGrow, label='grow')
+        goPop = model.Population(startingGo, label='go')
+        gonePop = model.Population(startingGone, label='gone')
 
         pops = [growPop, goPop, gonePop]
-        events = []
 
+        events = []
         for pop in pops:
             events.append(model.SimpleBirth(pop, birthrate))
             events.append(model.SimpleDeath(pop, deathrate))
@@ -27,7 +27,6 @@ class SimplestModel(model.Model):
 
 
         self = super().__init__(pops, events)
-
 
 
 #in this model, go cells give birth to grow cells instead of to go cells

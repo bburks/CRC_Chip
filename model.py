@@ -2,22 +2,31 @@ import random
 import math
 import matplotlib.pyplot as plt
 
-# when implementing a model, first create populations, then create events.
-# then add events to populations, combine populations into model.
+"""When implementing a model, first create populations, then create events.
+Combine populations and events into a model.
+
+You cannot use events on their own; they need to be implemented be subclasses
+that define a rate function.
+
+-SimpleEvent is a subclass where the rate is proportional to the
+size of some population.
+-SimpleBirth increases the population
+-SimpleDeath decreases the populations
+-SimpleTransfer keeps population sizes the same on net -- one population
+increases bye one while another decreases by one.
+"""
 
 
-# TODO: move history from model to population. time history will be stored in
-# the model while population history will be stored in population. I forget why
-# I want that but it was important to me at some point for some reason.
 
 class Population:
 
     # a population is a cell type. has a size (number of cells) and possible
     # events (birth, death, transition)
 
-    def __init__(self, count):
+    def __init__(self, count, label = ''):
         self.count = count
         self.history = []
+        self.label = label
 
     def get_size(self):
         return self.count
@@ -181,10 +190,13 @@ class Model:
     def show_history(self):
         fig, ax = plt.subplots()
         for pop in self.get_populations():
-            ax.plot(self.get_time_history(), pop.get_history())  # Plot some data on the axes.
+            ax.plot(
+            self.get_time_history(),
+            pop.get_history(),
+            label = pop.label,
+            )  # Plot some data on the axes.
+        plt.legend()
         plt.show()
-
-
 
 class SimpleEvent(Event):
     def __init__(self, populations, changes, rate, proPop):
