@@ -1,5 +1,6 @@
 import random
 import math
+import matplotlib.pyplot as plt
 
 # when implementing a model, first create populations, then create events.
 # then add events to populations, combine populations into model.
@@ -16,144 +17,195 @@ class Population:
 
     def __init__(self, count):
         self.count = count
-        self.events = []
+        self.history = []
+
     def get_size(self):
         return self.count
-    def add_population(self, inc):
+
+    def add_size(self, inc):
         self.count += inc
+
     def set_size(self, count):
         self.count = count
-    def get_total_rate(self):
 
-        rate = 0
-        for event in self.events:
-            rate += event.get_rate()
-        return rate*self.get_size()
-    def get_number_of_events(self):
-        return let(self.events)
-    def get_event(self, eventNumber):
-        return self.events[eventNumber]
-    def add_event(self, event):
-        self.events.append(event)
+    def get_history(self):
+        return self.history
+
+    def update_history(self):
+        self.history.append(self.get_size())
 
 class Event:
 
     # an event is something that happens -- a birth, a death, a cell type
     # change are all examples
-    def __init__(self, populations, changes, rate):
+
+    def __init__(self, populations, changes):
         self.populations = populations
         self.changes = changes
-        self.rate = rate
 
     def implement(self):
 
-        for i in range(0, len(self.populations)):
-            self.populations[i].add_population(self.changes[i])
+        for i, pop in enumerate(self.populations):
+            pop.add_size(self.changes[i])
 
     def get_rate(self):
-        return self.rate
+        pass
 
 class Model:
+
     # a model combines populations and events with their history and can run
     # a stochastic simulation
 
     # constructor - Models contain populations, a current time, and a history
     # of their past.
 
-    def __init__(self, pops):
+    def __init__(self, pops, events):
 
         self.populations = pops
+        self.events = events
         self.time = 0
-        self.history = []
-        for i in range(0, len(pops) + 1):
-            self.history.append([])
+        self.timeHistory = []
+        self.update_history()
 
 
-    #informative functions:
-    def get_population(self, i):
-        return self.populations[i]
+
+    #informative functions
+
     def get_time(self):
         return self.time
-    def get_history(self):
-        return self.history
 
-    def get_number_of_populations(self):
-        return len(self.populations)
+    def get_time_history(self):
+        return self.timeHistory
+
+    def get_events(self):
+        return self.events
+
+    def get_populations(self):
+        return self.populations
+
     def get_total_rate(self):
-        total = 0
-        for pop in self.populations:
-            total += pop.get_total_rate()
-        return total;
+        totalRate = 0
+        for event in self.get_events():
+            totalRate += event.get_rate()
+        return totalRate;
 
 
 
     # functions for changing/creating the model:
-    def add_population(self, pop): # currently broken because no history!
+
+    def add_population(self, pop):
     # this will eventually be fixed by putting history in population.
         self.populations.append(pop)
 
+    def set_time(self, newTime):
+        self.time = newTime
 
+    def increment_time(self, inc):
+        self.time += inc
 
+    def add_event(self, event):
+        self.events.append(event)
 
+    def update_time_history(self):
+        self.get_time_history().append(self.get_time())
 
-    # functions for updating the model:
+    def update_population_history(self):
+        for pop in self.get_populations():
+            pop.update_history()
+
+    def update_history(self):
+        self.update_time_history()
+        self.update_population_history()
+
+    #functions involving randomness:
+
     def get_waiting_time(self):
         r = random.random()
-        return math.log(r) * (-1) / self.get_total_rate()
+        return  math.log(r) * (-1) / self.get_total_rate()
 
     def get_random_event(self):
 
         r = random.random()*self.get_total_rate()
 
 
-        for pop in self.populations:
-            if r <= pop.get_total_rate():
-                popWithEvent = pop
-                break
-            r -= pop.get_total_rate()
+        for currentEvent in self.get_events():
+            currentRate = currentEvent.get_rate()
+            if r <= currentRate:
+                return currentEvent
+            r -= currentRate
 
-        r = r / popWithEvent.get_size()
+    def update_time(self):
+        self.increment_time(self.get_waiting_time())
 
-        for event in popWithEvent.events:
-            if r <= event.get_rate():
-                return event
-            r -= event.get_rate()
-
-        
-        print("if you see this something is broken")
-
-    def update_history(self):
-
-
-        self.history[0].append(self.get_time())
-        for i in range(0, self.get_number_of_populations()):
-            self.history[i + 1].append(self.get_population(i).get_size())
+    def update_populations(self):
+        event = self.get_random_event()
+        event.implement()
 
     def update(self):
+        self.update_time_history()
+        self.update_population_history()
+        self.update_time()
+        self.update_populations()
 
+
+
+
+    def run(self, duration, trackHistory = True):
+
+
+        endingTime = self.get_time() + duration
+
+
+
+        while True:
+
+            if self.get_total_rate() == 0: #extinction should end the simulation
+                break
+
+            self.update_time()
+
+            if self.get_time() > endingTime:
+                break
+
+            self.update_populations()
+
+            if trackHistory:
+                self.update_history()
+
+
+
+
+        self.set_time(endingTime)
         self.update_history()
 
-        self.time += self.get_waiting_time()
-
-        self.get_random_event().implement()
-
-
-
-
+    def show_history(self):
+        fig, ax = plt.subplots()
+        for pop in self.get_populations():
+            ax.plot(self.get_time_history(), pop.get_history())  # Plot some data on the axes.
+        plt.show()
 
 
 
-    def run(self, duration):
+class SimpleEvent(Event):
+    def __init__(self, populations, changes, rate, proPop):
+        super().__init__(populations, changes)
+        self.proportionalPop = proPop
+        self.rate = rate
 
+    def get_rate(self):
+        return self.rate * self.proportionalPop.get_size()
 
-            endingTime = self.get_time() + duration
+    def set_rate(self, newRate):
+        self.rate = newRate
 
-            while self.get_time() < endingTime:
-                if self.get_total_rate() == 0: #extinction
-                    break
-                self.update()
+class SimpleBirth(SimpleEvent):
+    def __init__(self, birthPop, birthRate):
+        self = super().__init__([birthPop], [1], birthRate, birthPop)
 
+class SimpleDeath(SimpleEvent):
+    def __init__(self, deathPop, deathRate):
+        self = super().__init__([deathPop], [-1], deathRate, deathPop)
 
-            self.time = endingTime
-            for i in range(0, self.get_number_of_populations()):
-                self.get_population(i).set_size(self.history[i][-1])
+class SimpleTransfer(SimpleEvent):
+    def __init__(self, fromPop, toPop, transferRate):
+        self = super().__init__([fromPop, toPop], [-1, 1], transferRate, fromPop)

@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 # function. To do this will require populations to have labels. Not a bad req.
 
 
-crc = sm.SimplestModelAlternate(1.03, 1, 0.1, 0.1, 100, 0, 0)
+crc = sm.SimplestModel(1.1, 1, 0.1, 0.1, 100, 0, 0)
 
-crc.run(100)
-
-
+crc.run(10, trackHistory = False)
 
 
+crc.show_history()
 
 
+"""
 growFigure, Ax = plt.subplots()
 Ax.plot(crc.get_history()[0], crc.get_history()[1], label='grow')
 Ax.plot(crc.get_history()[0], crc.get_history()[2], label='go')
@@ -24,3 +24,4 @@ Ax.plot(crc.get_history()[0], crc.get_history()[3], label='gone')
 #growFigure.show()
 plt.legend()
 plt.show()
+"""
