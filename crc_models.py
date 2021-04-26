@@ -29,37 +29,53 @@ class SimplestModel(model.Model):
         self = super().__init__(pops, events)
 
 
+
 #in this model, go cells give birth to grow cells instead of to go cells
 class SimplestModelAlternate(model.Model):
 
-    def __init__(self, birthrate, deathrate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone):
+    def __init__(self, birthRate, deathRate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone):
 
-        growPop = model.Population(startingGrow)
-        goPop = model.Population(startingGo)
-        gonePop = model.Population(startingGone)
+        growPop = model.Population(startingGrow, label='grow')
+        goPop = model.Population(startingGo, label='go')
+        gonePop = model.Population(startingGone, label='gone')
 
-
-        growBirth = model.Event([growPop], [1], birthrate)
-        goBirth = model.Event([growPop], [1], birthrate)
-        goneBirth = model.Event([gonePop], [1], birthrate)
-
-        growDeath = model.Event([growPop], [-1], deathrate)
-        goDeath = model.Event([goPop], [-1], deathrate)
-        goneDeath = model.Event([gonePop], [-1], deathrate)
-
-        growToGo = model.Event([growPop, goPop], [-1, 1], growToGoRate)
-        goToGone = model.Event([goPop, gonePop], [-1, 1], goToGoneRate)
+        pops = [growPop, goPop, gonePop]
+        events = []
+        for pop in pops:
+            events.append(model.SimpleBirth(pop, birthRate))
+            events.append(model.SimpleDeath(pop, deathRate))
 
 
-        growPop.add_event(growBirth)
-        growPop.add_event(growDeath)
-        growPop.add_event(growToGo)
+        growToGo = model.SimpleTransfer(growPop, goPop, growToGoRate)
+        goToGone = model.SimpleTransfer(goPop, gonePop, goToGoneRate)
 
-        goPop.add_event(goBirth)
-        goPop.add_event(goDeath)
-        goPop.add_event(goToGone)
+        events.append(growToGo)
+        events.append(goToGone)
 
-        gonePop.add_event(goneBirth)
-        gonePop.add_event(goneDeath)
+        self = super().__init__(pops, events)
 
-        self = super().__init__([growPop, goPop, gonePop])
+
+
+class BasicPeristalsis(model.Model):
+
+    def __init__(self,
+            birthRate,
+            deathRate,
+            growToGoRate,
+            goToGoneRate,
+            peristalsisModifier,
+            startingGrow,
+            startingGo,
+            startingGone,
+            ):
+
+        growPop = model.Population(startingGrow, label='grow')
+        goPop = model.Population(startingGo, label='go')
+        gonePop = model.Population(startingGone, label='gone')
+
+        pops = [growPop, goPop, gonePop]
+        events = []
+
+        for pop in pops:
+            events.append(model.SimpleBirth(pop, birthRate))
+            events.append(model.SimpleDeath(pop, deathRate))

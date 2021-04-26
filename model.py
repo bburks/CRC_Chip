@@ -20,8 +20,8 @@ increases bye one while another decreases by one.
 
 class Population:
 
-    # a population is a cell type. has a size (number of cells) and possible
-    # events (birth, death, transition)
+    # a population can be thought of all cells of a type. has a size
+    #(number of cells) and possible events (e.g., birth, death, transition)
 
     def __init__(self, count, label = ''):
         self.count = count
