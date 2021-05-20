@@ -33,7 +33,7 @@ class SimplestModel(model.Model):
 #in this model, go cells give birth to grow cells instead of to go cells
 class SimplestModelAlternate(model.Model):
 
-    def __init__(self, birthRate, deathRate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone):
+    def __init__(self, birthRate, deathRate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone, peristalsisAdjustment = 0):
 
         growPop = model.Population(startingGrow, label='grow')
         goPop = model.Population(startingGo, label='go')

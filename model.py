@@ -14,6 +14,8 @@ size of some population.
 -SimpleDeath decreases the populations
 -SimpleTransfer keeps population sizes the same on net -- one population
 increases bye one while another decreases by one.
+-SimpleToggleEvent and SimpleToggleTransfer include a possibility that the rate
+could change over time
 """
 
 
@@ -126,7 +128,7 @@ class Model:
         self.update_time_history()
         self.update_population_history()
 
-    #functions involving randomness:
+    # functions involving randomness:
 
     def get_waiting_time(self):
         r = random.random()
@@ -143,6 +145,8 @@ class Model:
                 return currentEvent
             r -= currentRate
 
+    # functions for updating the model:
+
     def update_time(self):
         self.increment_time(self.get_waiting_time())
 
@@ -156,19 +160,14 @@ class Model:
         self.update_time()
         self.update_populations()
 
-
-
-
-    def run(self, duration, trackHistory = True):
+    def empty_run(self, duration):
 
 
         endingTime = self.get_time() + duration
 
-
-
         while True:
 
-            if self.get_total_rate() == 0: #extinction should end the simulation
+            if self.get_total_rate() == 0:
                 break
 
             self.update_time()
@@ -178,24 +177,37 @@ class Model:
 
             self.update_populations()
 
-            if trackHistory:
-                self.update_history()
-
-
-
-
         self.set_time(endingTime)
         self.update_history()
 
-    def show_history(self):
-        fig, ax = plt.subplots()
+    def run(self, duration, dataCount = 1000):
+        for interval in range(dataCount):
+            # this line feels like it could lead to a floating point bug
+            self.empty_run(duration / dataCount)
+
+    #functions for results analysis
+
+    def make_history_graph(self):
+        self.fig = plt.figure()
+        self.ax = self.fig.add_axes([0, 0, 1, 1])
+        self.ax.set_title("population growth over time")
+        self.ax.set_xlabel("time")
+        self.ax.set_ylabel("population count")
+
+
         for pop in self.get_populations():
-            ax.plot(
+            self.ax.plot(
             self.get_time_history(),
             pop.get_history(),
             label = pop.label,
             )  # Plot some data on the axes.
-        plt.legend()
+        self.ax.legend()
+
+    def save_history_graph(self, filename):
+         self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
+
+
+    def show_history_graph(self):
         plt.show()
 
 class SimpleEvent(Event):
@@ -221,3 +233,24 @@ class SimpleDeath(SimpleEvent):
 class SimpleTransfer(SimpleEvent):
     def __init__(self, fromPop, toPop, transferRate):
         self = super().__init__([fromPop, toPop], [-1, 1], transferRate, fromPop)
+
+class SimpleToggleEvent(SimpleEvent):
+    def __init__(self, populations, changes, startingRate, toggledRate, proPop):
+        super().__init__(populations, changes)
+        self.proportionalPop = proPop
+        self.rate1 = startingRate
+        self.rate2 = toggledRate
+        self.rate = self.rate1
+        self.toggled = False
+
+        def toggle_rate(self):
+            if toggled:
+                self.rate = self.rate1
+                self.toggled = False
+            else:
+                self.rate = self.rate2
+                self.toggled = True
+
+class SimpleToggleTransfer(SimpleToggleEvent):
+        def __init__(self, fromPop, toPop, startingTransferRate, toggledTransferRate):
+            self = super().__init__([fromPop, toPop], [-1, 1], startingRate, toggledRate, fromPop)
