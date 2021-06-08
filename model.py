@@ -1,7 +1,7 @@
 import random
 import math
 import matplotlib.pyplot as plt
-
+import graph
 """When implementing a model, first create populations, then create events.
 Combine populations and events into a model.
 
@@ -13,7 +13,7 @@ size of some population.
 -SimpleBirth increases the population
 -SimpleDeath decreases the populations
 -SimpleTransfer keeps population sizes the same on net -- one population
-increases bye one while another decreases by one.
+increases by one while another decreases by one.
 -SimpleToggleEvent and SimpleToggleTransfer include a possibility that the rate
 could change over time
 """
@@ -44,6 +44,10 @@ class Population:
 
     def update_history(self):
         self.history.append(self.get_size())
+
+    def set_history(self, hist):
+        self.history = hist #beware using this
+
 
 class Event:
 
@@ -160,7 +164,8 @@ class Model:
         self.update_time()
         self.update_populations()
 
-    def empty_run(self, duration):
+    def stealth_run(self, duration):
+
 
 
         endingTime = self.get_time() + duration
@@ -178,18 +183,35 @@ class Model:
             self.update_populations()
 
         self.set_time(endingTime)
+
+    def empty_run(self, duration):
+
+        self.stealth_run(duration)
         self.update_history()
 
-    def run(self, duration, dataCount = 1000):
-        for interval in range(dataCount):
-            # this line feels like it could lead to a floating point bug
-            self.empty_run(duration / dataCount)
+    def interval_run(self, historyTimes):
+        historyTimes.sort() #might need a shallow copy depending on usage
+        lastTime = 0
+        for time in historyTimes:
+            self.empty_run(time - lastTime)
+            lastTime = time
 
-    #functions for results analysis
+    def run(self, duration, dataCount = 1000):
+
+        historyTimes = []
+        for data in range(1, dataCount):
+            historyTimes.append(data * duration / dataCount)
+        historyTimes.append(duration) #outside the loop to ensure final time
+        #does not have a floating point issue
+
+
+        self.interval_run(historyTimes)
+
+    # functions for results analysis
 
     def make_history_graph(self):
         self.fig = plt.figure()
-        self.ax = self.fig.add_axes([0, 0, 1, 1])
+        self.ax = self.fig.add_subplot(111)
         self.ax.set_title("population growth over time")
         self.ax.set_xlabel("time")
         self.ax.set_ylabel("population count")
@@ -199,16 +221,42 @@ class Model:
             self.ax.plot(
             self.get_time_history(),
             pop.get_history(),
-            label = pop.label,
+            label = pop.label
             )  # Plot some data on the axes.
+
         self.ax.legend()
-
-    def save_history_graph(self, filename):
-         self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
-
 
     def show_history_graph(self):
         plt.show()
+
+    def save_history_graph(self, filename, graphName = ''):
+         #self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
+         xdata = self.get_time_history()
+         ydatas = []
+         labels = []
+         for pop in self.get_populations():
+             ydatas.append(pop.get_history())
+             labels.append(pop.label)
+
+         g = graph.Graph(xdata, ydatas, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
+         g.save_graph(filename)
+
+    def save_log_history_graph(self, filename, graphName = ''):
+
+        xdata = self.get_time_history()
+        ydatas = []
+        labels = []
+        for pop in self.get_populations():
+            ydatas.append(pop.get_history())
+            labels.append(pop.label)
+
+        g = graph.Graph(xdata, ydatas, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
+        g.save_log_graph(filename)
+
+    # beware using these
+
+    def set_time_history(self, hist):
+        self.history = hist
 
 class SimpleEvent(Event):
     def __init__(self, populations, changes, rate, proPop):
@@ -234,23 +282,29 @@ class SimpleTransfer(SimpleEvent):
     def __init__(self, fromPop, toPop, transferRate):
         self = super().__init__([fromPop, toPop], [-1, 1], transferRate, fromPop)
 
+class SimpleNoninheritableBirth(SimpleEvent):
+    def __init__(self, parentPop, childPop, birthRate):
+        self = super().__init__([childPop], [1], birthRate, parentPop)
+
 class SimpleToggleEvent(SimpleEvent):
     def __init__(self, populations, changes, startingRate, toggledRate, proPop):
-        super().__init__(populations, changes)
-        self.proportionalPop = proPop
+        super().__init__(populations, changes, startingRate, proPop)
         self.rate1 = startingRate
         self.rate2 = toggledRate
-        self.rate = self.rate1
         self.toggled = False
 
-        def toggle_rate(self):
-            if toggled:
-                self.rate = self.rate1
+    def toggle(self):
+            if self.toggled:
                 self.toggled = False
             else:
-                self.rate = self.rate2
                 self.toggled = True
 
+    def get_rate(self):
+        if self.toggled:
+            return self.rate2 * self.proportionalPop.get_size()
+        else:
+            return self.rate1 * self.proportionalPop.get_size()
+
 class SimpleToggleTransfer(SimpleToggleEvent):
-        def __init__(self, fromPop, toPop, startingTransferRate, toggledTransferRate):
+        def __init__(self, fromPop, toPop, startingRate, toggledRate):
             self = super().__init__([fromPop, toPop], [-1, 1], startingRate, toggledRate, fromPop)
