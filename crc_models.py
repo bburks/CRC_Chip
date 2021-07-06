@@ -54,6 +54,10 @@ class SimplestModelAlternate(model.Model):
         self = super().__init__(pops, events)
 
 
+
+
+
+
 class InheritablePeristalsis(model.Model):
 
     def __init__(self, birthRate, deathRate, growToGoRate, goToGoneRate, peristalsisModifier, startingGrow, startingGo, startingGone):
@@ -194,3 +198,136 @@ class NonInheritablePeristalsis(model.Model):
 
 
     pass
+
+
+
+class LogisticToggleBirth(model.Event):
+
+    def __init__(self, parentPop, childPop, logisticPops, rateHigh, rateLow, popSwitchCount):
+        super().__init__([childPop], [1])
+        self.parentPop = parentPop
+        self.childPop = childPop
+        self.logisticPops = logisticPops
+        self.rateHigh = rateHigh
+        self.rateLow = rateLow
+        self.popSwitchCount = popSwitchCount
+
+    def get_rate(self):
+        logisticPopCount = 0
+        for pop in self.logisticPops:
+            logisticPopCount += pop.get_size()
+
+        if logisticPopCount > self.popSwitchCount:
+            proRate = self.rateLow
+        else:
+            proRate = self.rateHigh
+
+        return proRate * self.parentPop.get_size()
+
+class TwoPopLogistic(model.ToggleModel):
+
+    def __init__(self, params):
+        birthRateHigh = params.get('higher birthrate')
+        birthRateLow = params.get('lower birthrate')
+        swapCount = params.get('birthrate swaps at')
+        deathRate = params.get('deathrate')
+        transferDefaultRate = params.get('go to gone')
+        transferPeristalsisRate = params.get('go to gone peristalsis')
+        startingGrow = params.get('starting go')
+        startingGone = params.get('starting gone')
+
+
+        growPop = model.Population(startingGrow, label = 'top')
+        gonePop = model.Population(startingGone, label = 'bottom')
+
+        pops = [growPop, gonePop]
+        events = []
+        for pop in pops:
+            death = model.SimpleDeath(pop, deathRate)
+            birth = LogisticToggleBirth(pop, pop, [pop], birthRateHigh, birthRateLow, swapCount)
+
+            events.append(death)
+            events.append(birth)
+
+        intravasation = model.SimpleToggleTransfer(growPop, gonePop, transferDefaultRate, transferPeristalsisRate)
+        events.append(intravasation)
+
+        super().__init__(pops, events, [intravasation])
+
+class ThreePopLogisticNonInheritable(model.ToggleModel):
+    def __init__(self, params):
+
+        birthRateHigh = params.get('higher birthrate')
+        birthRateLow = params.get('lower birthrate')
+        swapCount = params.get('birthrate swaps at')
+
+        deathRate = params.get('deathrate')
+
+        transferDefaultRate = params.get('grow to go')
+        transferPeristalsisRate = params.get('grow to go peristalsis')
+        intravasationRate = params.get('go to gone')
+
+        startingGrow = params.get('starting grow')
+        startingGo = params.get('starting go')
+        startingGone = params.get('starting gone')
+
+
+        growPop = model.Population(startingGrow, label = 'grow')
+        goPop = model.Population(startingGo, label = 'go')
+        gonePop = model.Population(startingGone, label = 'gone')
+
+        pops = [growPop, goPop, gonePop]
+
+        events = []
+        for pop in pops:
+            death = model.SimpleDeath(pop, deathRate)
+            if pop == gonePop:
+                birth = LogisticToggleBirth(pop, pop, [gonePop], birthRateHigh, birthRateLow, swapCount)
+            else:
+                birth = LogisticToggleBirth(pop, growPop, [growPop, goPop], birthRateHigh, birthRateLow, swapCount)
+            events.extend([birth, death])
+
+        growToGo = model.SimpleToggleTransfer(growPop, goPop, transferDefaultRate, transferPeristalsisRate)
+        goToGone = model.SimpleTransfer(goPop, gonePop, intravasationRate)
+        events.extend([growToGo, goToGone])
+
+        super().__init__(pops, events, [growToGo])
+
+class ThreePopLogisticInheritable(model.ToggleModel):
+    def __init__(self, params):
+
+        birthRateHigh = params.get('higher birthrate')
+        birthRateLow = params.get('lower birthrate')
+        swapCount = params.get('birthrate swaps at')
+
+        deathRate = params.get('deathrate')
+
+        transferDefaultRate = params.get('grow to go')
+        transferPeristalsisRate = params.get('grow to go peristalsis')
+        intravasationRate = params.get('go to gone')
+
+        startingGrow = params.get('starting grow')
+        startingGo = params.get('starting go')
+        startingGone = params.get('starting gone')
+
+
+        growPop = model.Population(startingGrow, label = 'grow')
+        goPop = model.Population(startingGo, label = 'go')
+        gonePop = model.Population(startingGone, label = 'gone')
+
+        pops = [growPop, goPop, gonePop]
+
+        events = []
+        for pop in pops:
+            death = model.SimpleDeath(pop, deathRate)
+            if pop == gonePop:
+                birth = LogisticToggleBirth(pop, pop, [gonePop], birthRateHigh, birthRateLow, swapCount)
+            else:
+                birth = LogisticToggleBirth(pop, pop, [growPop, goPop], birthRateHigh, birthRateLow, swapCount)
+            events.extend([birth, death])
+
+        growToGo = model.SimpleToggleTransfer(growPop, goPop, transferDefaultRate, transferPeristalsisRate)
+        goToGone = model.SimpleTransfer(goPop, gonePop, intravasationRate)
+        events.extend([growToGo, goToGone])
+
+        super().__init__(pops, events, [growToGo])

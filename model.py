@@ -2,6 +2,10 @@ import random
 import math
 import matplotlib.pyplot as plt
 import graph
+import csv
+import copy
+
+
 """When implementing a model, first create populations, then create events.
 Combine populations and events into a model.
 
@@ -47,7 +51,6 @@ class Population:
 
     def set_history(self, hist):
         self.history = hist #beware using this
-
 
 class Event:
 
@@ -190,20 +193,22 @@ class Model:
         self.update_history()
 
     def interval_run(self, historyTimes):
-        historyTimes.sort() #might need a shallow copy depending on usage
         lastTime = 0
         for time in historyTimes:
             self.empty_run(time - lastTime)
             lastTime = time
 
-    def run(self, duration, dataCount = 1000):
-
+    @staticmethod
+    def make_intervals(duration, dataCount):
         historyTimes = []
         for data in range(1, dataCount):
             historyTimes.append(data * duration / dataCount)
-        historyTimes.append(duration) #outside the loop to ensure final time
-        #does not have a floating point issue
+        historyTimes.append(duration)
+        return historyTimes
 
+    def run(self, duration, dataCount = 1000):
+
+        historyTimes = make_intervals(duration, dataCount)
 
         self.interval_run(historyTimes)
 
@@ -229,17 +234,19 @@ class Model:
     def show_history_graph(self):
         plt.show()
 
-    def save_history_graph(self, filename, graphName = ''):
+    def save_history_graph(self, path, graphName = ''):
          #self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
          xdata = self.get_time_history()
          ydatas = []
          labels = []
+         errors = []
          for pop in self.get_populations():
              ydatas.append(pop.get_history())
              labels.append(pop.label)
+             errors.append(0)
 
-         g = graph.Graph(xdata, ydatas, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
-         g.save_graph(filename)
+         g = graph.Graph(xdata, ydatas, errors, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
+         g.save_no_errors_graph(path)
 
     def save_log_history_graph(self, filename, graphName = ''):
 
@@ -253,10 +260,131 @@ class Model:
         g = graph.Graph(xdata, ydatas, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
         g.save_log_graph(filename)
 
+    def export_history_to_csv(self, path):
+        with open(path + '.csv', 'w', newline='') as csvfile:
+            csvWriter = csv.writer(csvfile, delimiter=',',
+                                    quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+            csvWriter.writerow(['time'] + self.get_time_history())
+
+            for pop in self.get_populations():
+                csvWriter.writerow([pop.label] + pop.get_history())
+
     # beware using these
 
     def set_time_history(self, hist):
         self.history = hist
+
+class SimulationData:
+
+    def __init__(self, times, populationLabels, populationData):
+        self.times = times
+        self.labels = populationLabels
+        self.data = populationData
+
+    def make_a_zero_copy(self):
+        times = self.times
+        labels = self.labels
+
+        data = copy.deepcopy(self.data)
+
+        for list in data:
+            l = len(list)
+            for i in range(l):
+                list[l] = 0
+
+        return SimulationData(times, labels, data)
+
+    def make_graph(self, errors = 'unwritten', path = 'output_files/defaultOutputGraph', graphName = ''):
+
+        if errors == 'unwritten':
+            errors = self.make_a_zero_copy()
+
+        xdata = self.times
+        ydatas = self.data
+        errors = errors.data
+        labels = self.labels
+
+        g = graph.Graph(xdata, ydatas, errors, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
+        g.save_graph(path)
+        return g
+
+
+
+
+class ToggleModel(Model):
+    def __init__(self, pops, events, toggleEvents):
+        super().__init__(pops, events)
+        self.toggleEvents = toggleEvents
+
+
+    def toggle(self):
+        for event in self.toggleEvents:
+            event.toggle()
+
+    def is_toggled(self):
+        return self.get_events()[0].is_toggled()
+
+    @staticmethod
+    def combineLists(historyTimes, toggleTimes):
+
+
+        len1 = len(historyTimes)
+        len2 = len(toggleTimes)
+
+
+
+        combined = []
+        isAToggles = []
+
+        i, j = 0, 0
+
+        while i < len1 and j < len2:
+            if historyTimes[i] < toggleTimes[j]:
+                combined.append(historyTimes[i])
+                isAToggles.append(False)
+                i += 1
+            else:
+                combined.append(toggleTimes[j])
+                isAToggles.append(True)
+                j += 1
+
+        combined = combined + historyTimes[i:] + toggleTimes[j:]
+        isAToggles = isAToggles  + [False] * (len1 - i) + [True] * (len2 - j)
+
+        return [combined, isAToggles]
+
+    @staticmethod
+    def make_intervals(duration, dataCount):
+        intervals = []
+        for i in range(1, dataCount):
+            intervals.append(i * duration / dataCount)
+        intervals.append(duration)
+        return intervals
+
+    def run(self, duration, dataCount = 1000, toggleTimes = []):
+
+        historyTimes = ToggleModel.make_intervals(duration, dataCount)
+        [intervalTimes, isAToggles] = ToggleModel.combineLists(historyTimes, toggleTimes)
+        self.interval_run(intervalTimes, isAToggles)
+
+    def interval_run(self, intervalTimes, isAToggles):
+        print(intervalTimes)
+        print(isAToggles)
+        intervalCount = len(intervalTimes)
+        lastTime = 0
+
+
+        for i, time in enumerate(intervalTimes):
+            duration = time - lastTime
+
+            if isAToggles[i]:
+                self.stealth_run(duration)
+                self.toggle()
+            else:
+                self.empty_run(duration)
+
+            lastTime = time
 
 class SimpleEvent(Event):
     def __init__(self, populations, changes, rate, proPop):
@@ -298,6 +426,9 @@ class SimpleToggleEvent(SimpleEvent):
                 self.toggled = False
             else:
                 self.toggled = True
+
+    def is_toggled(self):
+        return self.toggled
 
     def get_rate(self):
         if self.toggled:

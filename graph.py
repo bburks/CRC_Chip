@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import math
 
-def my_log(int):
+def my_log(int, base = 10):
     if int < 1:
         return -1
     else:
-        return math.log(int)
+        return math.log(int, base)
 
 
 class Graph:
@@ -25,7 +25,23 @@ class Graph:
         self.yDatas.append(yData)
         self.yError.append(yError)
 
-    def save_graph(self, path, sizing = 160):
+    def save_graph(self, path, sizing = 160, ymax = 'default'):
+        fig = plt.figure()
+
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.set_title(self.name)
+        if ymax != 'default':
+            ax.set_ylim(0, ymax)
+
+        for i, ydata in enumerate(self.yDatas):
+            ax.errorbar(self.xData, ydata, yerr = self.yErrors[i], label = self.labels[i], capsize = 5)
+        ax.legend()
+        fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
+        plt.close()
+
+    def save_no_errors_graph(self, path, sizing = 160):
         fig = plt.figure()
 
         ax = fig.add_subplot(111)
@@ -33,26 +49,54 @@ class Graph:
         ax.set_ylabel(self.ylabel)
         ax.set_title(self.name)
         for i, ydata in enumerate(self.yDatas):
-            ax.errorbar(self.xData, ydata, yerr = self.yErrors[i], label = self.labels[i], capsize = 5)
+            ax.plot(self.xData, ydata, label = self.labels[i])
         ax.legend()
         fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
         plt.close()
 
+
     def save_log_graph(self, path, sizing = 160):
-        newYdatas = []
-        newYerrors = []
-        for ydata in self.yDatas:
-            newYdata = []
-            newYerror = []
-            for datum in ydata:
-                newYdata.append(my_log(datum))
-                newYerror.append(0)
-            newYdatas.append(newYdata)
-            newYerrors.append(newYerror)
+        yDataList = []
+        upperErrorsList = []
+        lowerErrorsList = []
+        for i, yData in enumerate(self.yDatas):
+            newYData = []
+            upperErrors = []
+            lowerErrors = []
+
+            for j, datum in enumerate(yData):
+                error = self.yErrors[i][j]
+                newDatum = my_log(datum, 2)
+
+                upper = datum + error
+                lower = datum - error
+
+                upperError = my_log(upper, 2) - newDatum
+                lowerError = newDatum - my_log(lower, 2)
+
+                newYData.append(newDatum)
+                upperErrors.append(upperError)
+                lowerErrors.append(lowerError)
 
 
-        newGraph = Graph(self.xData, newYdatas, newYerrors, self.labels, xlabel = self.xlabel, ylabel = self.ylabel, name = self.name)
-        newGraph.save_graph(path, sizing = sizing)
+            yDataList.append(newYData)
+            upperErrorsList.append(upperErrors)
+            lowerErrorsList.append(lowerErrors)
+
+        fig = plt.figure()
+
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.set_title(self.name)
+
+        for i, yData in enumerate(yDataList):
+            errors = [lowerErrorsList[i], upperErrorsList[i]]
+            ax.errorbar(self.xData, yData, yerr = errors, label = self.labels[i], capsize = 5)
+
+        ax.legend()
+        fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
+        plt.close()
 
     def combine(self, g):
         newXData = self.xData

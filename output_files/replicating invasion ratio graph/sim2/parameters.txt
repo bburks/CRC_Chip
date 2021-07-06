@@ -1,0 +1,12 @@
+birthRate = 1.3
+deathRate = 1
+growToGoRate = 0.01
+goToGoneRate = 0.1
+peristalsisModifier = 0.01
+startingGrow = 7000
+startingGo = 0
+startingGone = 20
+duration = 6
+swaptimes = [0, 2, 4]
+attemptCount = 10
+dataCount = 3
