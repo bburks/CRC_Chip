@@ -1,9 +1,7 @@
 import model
-import matplotlib.pyplot as plt
 
-#in this model, we have three types of cells - "go" "grow" and "gone"
-#all have the same birthrate and same deathrate
-
+# in this model, we have three types of cells - "go" "grow" and "gone".
+# all have the same birthrate and same deathrate.
 
 class SimplestModel(model.Model):
     def __init__(self, birthrate, deathrate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone):
@@ -26,10 +24,10 @@ class SimplestModel(model.Model):
         events.append(goToGone)
 
 
-        self = super().__init__(pops, events)
+        self = super().__init__(pops, events, name = 'SimplestModel')
 
+# in this model, go cells give birth to one go cell and one grow cell instead of to two go cells.
 
-#in this model, go cells give birth to grow cells instead of to go cells
 class SimplestModelAlternate(model.Model):
 
     def __init__(self, birthRate, deathRate, growToGoRate, goToGoneRate, startingGrow, startingGo, startingGone, peristalsisAdjustment = 0):
@@ -51,12 +49,9 @@ class SimplestModelAlternate(model.Model):
         events.append(growToGo)
         events.append(goToGone)
 
-        self = super().__init__(pops, events)
+        self = super().__init__(pops, events, name = 'SimplestModelAlternate')
 
-
-
-
-
+# now we incorporate stretching into each model to get these two models.
 
 class InheritablePeristalsis(model.Model):
 
@@ -199,7 +194,9 @@ class NonInheritablePeristalsis(model.Model):
 
     pass
 
-
+# it turns out from the data, the birthrate decreases over time.
+# This event encapsulates that idea by changing the birthrate once
+# the population size reaches a certain value.
 
 class LogisticToggleBirth(model.Event):
 
@@ -223,6 +220,8 @@ class LogisticToggleBirth(model.Event):
             proRate = self.rateHigh
 
         return proRate * self.parentPop.get_size()
+
+# here's an unrealistic model used to test that logisic births work.
 
 class TwoPopLogistic(model.ToggleModel):
 
@@ -252,7 +251,9 @@ class TwoPopLogistic(model.ToggleModel):
         intravasation = model.SimpleToggleTransfer(growPop, gonePop, transferDefaultRate, transferPeristalsisRate)
         events.append(intravasation)
 
-        super().__init__(pops, events, [intravasation])
+        super().__init__(pops, events, [intravasation], name = 'TwoPopLogistic')
+
+# here's our two original 'simplest' models, now incorporating logisitic births.
 
 class ThreePopLogisticNonInheritable(model.ToggleModel):
     def __init__(self, params):
@@ -291,7 +292,7 @@ class ThreePopLogisticNonInheritable(model.ToggleModel):
         goToGone = model.SimpleTransfer(goPop, gonePop, intravasationRate)
         events.extend([growToGo, goToGone])
 
-        super().__init__(pops, events, [growToGo])
+        super().__init__(pops, events, [growToGo], name = 'ThreePopLogisticNonInheritable')
 
 class ThreePopLogisticInheritable(model.ToggleModel):
     def __init__(self, params):
@@ -330,4 +331,4 @@ class ThreePopLogisticInheritable(model.ToggleModel):
         goToGone = model.SimpleTransfer(goPop, gonePop, intravasationRate)
         events.extend([growToGo, goToGone])
 
-        super().__init__(pops, events, [growToGo])
+        super().__init__(pops, events, [growToGo], name = 'ThreePopLogisticInheritable')

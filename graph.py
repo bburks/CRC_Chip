@@ -7,6 +7,9 @@ def my_log(int, base = 10):
     else:
         return math.log(int, base)
 
+def get_next_power_of_two(num):
+    nextPowerOfTwo = 2 ** math.ceil(math.log(num, 2))
+    return nextPowerOfTwo
 
 class Graph:
 
@@ -19,11 +22,22 @@ class Graph:
         self.ylabel = ylabel
         self.name = name
 
-
+    # useful for creating the Graph object
 
     def add_plot(self, yData, yError):
         self.yDatas.append(yData)
         self.yError.append(yError)
+
+    # some helper functions
+
+    def get_max_data(self):
+        sup = 0
+        for i, data in enumerate(self.yDatas):
+            for j, datum in enumerate(data):
+                yVal = datum + self.yErrors[i][j]
+                sup = max(sup, yVal)
+        return sup
+    # actually making visual graphs out of the Graph object
 
     def save_graph(self, path, sizing = 160, ymax = 'default'):
         fig = plt.figure()
@@ -32,8 +46,10 @@ class Graph:
         ax.set_xlabel(self.xlabel)
         ax.set_ylabel(self.ylabel)
         ax.set_title(self.name)
-        if ymax != 'default':
-            ax.set_ylim(0, ymax)
+
+        if ymax == 'default':
+            ymax = get_next_power_of_two(self.get_max_data())
+        ax.set_ylim(0, ymax)
 
         for i, ydata in enumerate(self.yDatas):
             ax.errorbar(self.xData, ydata, yerr = self.yErrors[i], label = self.labels[i], capsize = 5)
@@ -53,7 +69,6 @@ class Graph:
         ax.legend()
         fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
         plt.close()
-
 
     def save_log_graph(self, path, sizing = 160):
         yDataList = []
@@ -98,6 +113,9 @@ class Graph:
         fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
         plt.close()
 
+    # returns a new object containing all the plots (yDatas with yErrors)
+    # from Graph objects self and g
+
     def combine(self, g):
         newXData = self.xData
         newYdatas = self.yDatas + g.yDatas
@@ -110,14 +128,3 @@ class Graph:
         newGraph = Graph(newXData, newYdatas, newYErrors, newLabels, newXLabel, newYLabel, newName)
 
         return newGraph
-
-
-def main():
-
-    testGraph = Graph([0, 1, 2, 3], [[0, 0, 0, 0], [1, 2, 4, 3]], ['0', '1'])
-    testGraph.save_graph('output_files/test/1.png')
-
-    secondGraph = Graph([0, 1, 2, 3], [[0, 0, 0, 0], [1, 2, 5, 20]], ['0', '1'])
-    secondGraph.save_graph('output_files/test/2.png')
-if __name__ == "__main__":
-    main()

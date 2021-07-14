@@ -9,8 +9,8 @@ import copy
 """When implementing a model, first create populations, then create events.
 Combine populations and events into a model.
 
-You cannot use events on their own; they need to be implemented be subclasses
-that define a rate function.
+You cannot use events on their own; they need to be implemented by subclasses
+that define a get_rate(self) method.
 
 -SimpleEvent is a subclass where the rate is proportional to the
 size of some population.
@@ -26,8 +26,9 @@ could change over time
 
 class Population:
 
-    # a population can be thought of all cells of a type. has a size
-    #(number of cells) and possible events (e.g., birth, death, transition)
+    # a population can be thought of as all cells of a specific type.
+    # has a size (number of cells) and possible events
+    # (e.g., birth, death, transition)
 
     def __init__(self, count, label = ''):
         self.count = count
@@ -49,8 +50,11 @@ class Population:
     def update_history(self):
         self.history.append(self.get_size())
 
-    def set_history(self, hist):
-        self.history = hist #beware using this
+    def get_label(self):
+        return self.label
+
+    def set_label(self, label):
+        self.label = label
 
 class Event:
 
@@ -77,15 +81,14 @@ class Model:
     # constructor - Models contain populations, a current time, and a history
     # of their past.
 
-    def __init__(self, pops, events):
+    def __init__(self, pops, events, name = 'model'):
 
         self.populations = pops
         self.events = events
+        self.name = name
         self.time = 0
         self.timeHistory = []
         self.update_history()
-
-
 
     #informative functions
 
@@ -115,19 +118,23 @@ class Model:
     # this will eventually be fixed by putting history in population.
         self.populations.append(pop)
 
+    def add_event(self, event):
+        self.events.append(event)
+
     def set_time(self, newTime):
         self.time = newTime
 
     def increment_time(self, inc):
         self.time += inc
 
-    def add_event(self, event):
-        self.events.append(event)
+    # update_history is the only one we'll want to call. it is bad to update
+    # time history without updating population histories, and vice versa
 
     def update_time_history(self):
         self.get_time_history().append(self.get_time())
 
     def update_population_history(self):
+
         for pop in self.get_populations():
             pop.update_history()
 
@@ -144,8 +151,6 @@ class Model:
     def get_random_event(self):
 
         r = random.random()*self.get_total_rate()
-
-
         for currentEvent in self.get_events():
             currentRate = currentEvent.get_rate()
             if r <= currentRate:
@@ -168,18 +173,12 @@ class Model:
         self.update_populations()
 
     def stealth_run(self, duration):
-
-
-
         endingTime = self.get_time() + duration
-
         while True:
-
             if self.get_total_rate() == 0:
                 break
 
             self.update_time()
-
             if self.get_time() > endingTime:
                 break
 
@@ -214,53 +213,29 @@ class Model:
 
     # functions for results analysis
 
-    def make_history_graph(self):
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111)
-        self.ax.set_title("population growth over time")
-        self.ax.set_xlabel("time")
-        self.ax.set_ylabel("population count")
-
-
-        for pop in self.get_populations():
-            self.ax.plot(
-            self.get_time_history(),
-            pop.get_history(),
-            label = pop.label
-            )  # Plot some data on the axes.
-
-        self.ax.legend()
-
-    def show_history_graph(self):
-        plt.show()
-
-    def save_history_graph(self, path, graphName = ''):
-         #self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
-         xdata = self.get_time_history()
-         ydatas = []
-         labels = []
-         errors = []
-         for pop in self.get_populations():
-             ydatas.append(pop.get_history())
-             labels.append(pop.label)
-             errors.append(0)
-
-         g = graph.Graph(xdata, ydatas, errors, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
-         g.save_no_errors_graph(path)
-
-    def save_log_history_graph(self, filename, graphName = ''):
-
+    def make_history_graph(self, graphName = ''):
+        #self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
         xdata = self.get_time_history()
         ydatas = []
         labels = []
+        errors = []
         for pop in self.get_populations():
             ydatas.append(pop.get_history())
             labels.append(pop.label)
+            errors.append(0)
 
-        g = graph.Graph(xdata, ydatas, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
-        g.save_log_graph(filename)
+        g = graph.Graph(xdata, ydatas, errors, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
+        return g
 
-    def export_history_to_csv(self, path):
+    def save_history_graph(self, path, graphName = ''):
+         g = make_history_graph(graphName = graphName)
+         g.save_no_errors_graph(path)
+
+    def save_log_history_graph(self, path, graphName = ''):
+        g = make_history_graph(graphName = graphName)
+        g.save_log_graph(path)
+
+    def export_to_csv(self, path):
         with open(path + '.csv', 'w', newline='') as csvfile:
             csvWriter = csv.writer(csvfile, delimiter=',',
                                     quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -270,10 +245,9 @@ class Model:
             for pop in self.get_populations():
                 csvWriter.writerow([pop.label] + pop.get_history())
 
-    # beware using these
 
-    def set_time_history(self, hist):
-        self.history = hist
+# this class is not getting used but could be helpful in better organizing
+# results
 
 class SimulationData:
 
@@ -310,11 +284,9 @@ class SimulationData:
         return g
 
 
-
-
 class ToggleModel(Model):
-    def __init__(self, pops, events, toggleEvents):
-        super().__init__(pops, events)
+    def __init__(self, pops, events, toggleEvents, name = 'ToggleModel'):
+        super().__init__(pops, events, name)
         self.toggleEvents = toggleEvents
 
 
@@ -386,10 +358,11 @@ class ToggleModel(Model):
 
             lastTime = time
 
+
 class SimpleEvent(Event):
-    def __init__(self, populations, changes, rate, proPop):
+    def __init__(self, populations, changes, rate, proportionalPop):
         super().__init__(populations, changes)
-        self.proportionalPop = proPop
+        self.proportionalPop = proportionalPop
         self.rate = rate
 
     def get_rate(self):
