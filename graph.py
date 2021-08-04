@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import math
 
 def my_log(int, base = 10):
-    if int < 1:
+    if int <= 0:
         return -1
     else:
         return math.log(int, base)
@@ -39,7 +39,7 @@ class Graph:
         return sup
     # actually making visual graphs out of the Graph object
 
-    def save_graph(self, path, sizing = 160, ymax = 'default'):
+    def stealth_graph(self, sizing = 160, ymax = 'default'):
         fig = plt.figure()
 
         ax = fig.add_subplot(111)
@@ -54,6 +54,10 @@ class Graph:
         for i, ydata in enumerate(self.yDatas):
             ax.errorbar(self.xData, ydata, yerr = self.yErrors[i], label = self.labels[i], capsize = 5)
         ax.legend()
+        return [fig, ax]
+
+    def save_graph(self, path, sizing = 160, ymax = 'default'):
+        [fig, _] = self.stealth_graph(sizing = sizing, ymax = ymax)
         fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
         plt.close()
 
@@ -128,3 +132,43 @@ class Graph:
         newGraph = Graph(newXData, newYdatas, newYErrors, newLabels, newXLabel, newYLabel, newName)
 
         return newGraph
+
+class SuperGraph:
+    def __init__(self, graphsList):
+        self.w = len(graphsList[0])
+        self.h = len(graphsList)
+        self.graphsList = graphsList
+
+
+
+    def save(self, path, sizing = 160):
+        fig, axs = plt.subplots(self.h, self.w)
+
+        for h in range(self.h):
+            for w in range(self.w):
+                g = self.graphsList[h][w]
+                ax = axs[h][w]
+
+                ax.set_xlabel(g.xlabel)
+                ax.set_ylabel(g.ylabel)
+                ax.set_title(g.name)
+
+                ymax = get_next_power_of_two(g.get_max_data())
+
+
+                for i, ydata in enumerate(g.yDatas):
+                    ax.errorbar(g.xData, ydata, yerr = g.yErrors[i], label = g.labels[i], capsize = 5)
+                #ax.legend()
+
+
+        fig.subplots_adjust(hspace = 0.4
+
+
+
+
+        )
+        fig.savefig(path, transparent=False, dpi=sizing, bbox_inches="tight")
+        plt.close()
+
+    def save_log(self, path, sizing = 160):
+        pass

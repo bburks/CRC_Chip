@@ -1,5 +1,6 @@
 import model
 import crc_models
+import csv_handler
 import os
 import copy
 import graph
@@ -60,6 +61,42 @@ def make_a_three_pop_inheritable_log():
     threePopLog = crc_models.ThreePopLogisticInheritable(params)
     return threePopLog
 
+def make_a_reversible_inheritable():
+    params = {
+    'higher birthrate' : 1,
+    'lower birthrate' : 0.75,
+    'birthrate swaps at' : 25000,
+    'deathrate' : 0.5,
+    'grow to go' : 0.001,
+    'grow to go peristalsis' : 0.004,
+    'go to grow' : 0.012,
+    'go to gone' : 1,
+    'starting grow' : 8500,
+    'starting go' : 0,
+    'starting gone' : 15,
+    }
+
+    reversibleInheritable = crc_models.ReversibleInheritable(params)
+    return reversibleInheritable
+
+def make_a_reversible_half_inheritable():
+    params = {
+    'higher birthrate' : 1,
+    'lower birthrate' : 0.75,
+    'birthrate swaps at' : 25000,
+    'deathrate' : 0.5,
+    'grow to go' : 0.001,
+    'grow to go peristalsis' : 0.004,
+    'go to grow' : 0.012,
+    'go to gone' : 1,
+    'starting grow' : 8500,
+    'starting go' : 0,
+    'starting gone' : 15,
+    }
+
+    reversibleHalf = crc_models.ReversibleHalfInheritable(params)
+    return reversibleHalf
+
 #helper functions
 
 def divide(list_of_lists, d):
@@ -73,66 +110,22 @@ def divide_list(list, d):
         list[i] = num / d
     return list
 
-# inputs a CSV and outputs [times, labels, dataList]
-# dataList is a list of lists.
-
-def extract_from_csv(path):
-    dataList = []
-    labels = []
-    times = []
-
-
-    with open(path +'.csv', newline = '') as file:
-        reader = csv.reader(file)
-
-        firstRow = next(reader)
-
-        for i, data in enumerate(firstRow):
-            if i == 0:
-                labels.append(data)
-            else:
-                times.append(float(data))
-
-        for i, nextRow in enumerate(reader):
-            dataList.append([])
-            for j, data in enumerate(nextRow):
-                if j == 0:
-                    labels.append(data)
-                else:
-                    dataList[i].append(float(data))
-
-
-        return [times, labels, dataList]
-
-# writes a csv containing times, labels, dataList at the given path
-
-def export_to_csv(times, labels, dataList, path):
-    with open(path + '.csv', 'w', newline = '') as file:
-        writer = csv.writer(file)
-
-        writer.writerow([labels[0]] + times)
-
-        for i, row in enumerate(dataList):
-            writer.writerow([labels[i + 1]] + row)
-
-
-
-
 # run simulations and write them to CSVs
 
 def make_one_csv(model, duration, swapTimes, dataCount, path):
     modelToSim = copy.deepcopy(model)
     modelToSim.run(duration, dataCount, swapTimes)
 
-    with open(path + '.csv', 'w', newline = '') as data:
-        dataWriter = csv.writer(data)
 
-        firstLine = ['time'] + modelToSim.get_time_history()
-        dataWriter.writerow(firstLine)
+    times = modelToSim.get_time_history()
+    labels = ['time']
+    dataList = []
 
-        for pop in modelToSim.get_populations():
-            nextLine = [pop.label] + pop.get_history()
-            dataWriter.writerow(nextLine)
+    for pop in modelToSim.get_populations():
+        labels.append(pop.get_label())
+        dataList.append(pop.get_history())
+
+    csv_handler.export_to_csv(times, labels, dataList, path)
 
 def make_many_csvs(model, duration, swapTimes, dataCount, attemptCount, path):
     for i in range(attemptCount):
@@ -140,15 +133,17 @@ def make_many_csvs(model, duration, swapTimes, dataCount, attemptCount, path):
 
 def make_many_conditions_csvs(model, duration, swapTimesList, conditionLabels, dataCount, attemptCount, path):
 
+    csv_handler.export_line_to_csv(conditionLabels, path + 'condition names')
+
     for i, swapTimes in enumerate(swapTimesList):
+
+        conditionPath = path + conditionLabels[i] + '/'
         try:
-            os.mkdir(path + 'condition_' + str(i + 1) + '/')
+            os.mkdir(conditionPath)
         except:
             pass
-        label = open(path + 'condition_' + str(i + 1) + '/condition.txt', 'w')
-        label.write(conditionLabels[i])
-        label.close()
-        make_many_csvs(model, duration, swapTimes, dataCount, attemptCount, path + 'condition_' + str(i + 1) + '/')
+
+        make_many_csvs(model, duration, swapTimes, dataCount, attemptCount, conditionPath)
 
 # analyse simulations
 
@@ -156,77 +151,48 @@ def make_averages_of_csvs(attemptCount, path):
 
 
     sumsList = []
-    squaresumsList = []
+    squareSumsList = []
     times = []
     labels = []
     errors = []
     averages = []
 
-    with open(path + '1.csv', newline = '') as firstData:
-        reader = csv.reader(firstData)
-        firstRow = next(reader)
-        times = []
+    firstPath = path + '1'
+    [times, labels, firstDataList] = csv_handler.extract_from_csv(firstPath)
 
-        for time in firstRow[1:]:
-            times.append(float(time))
-
-        labels.append(firstRow[0])
-
-
-
-
-
-        for nextRow in reader:
-            labels.append(nextRow[0])
-
-            sums = []
-            squareSums = []
-            for datum in nextRow[1:]:
-                sums.append(float(datum))
-                squareSums.append(float(datum) ** 2)
-            sumsList.append(sums)
-            squaresumsList.append(squareSums)
+    for row in firstDataList:
+        newSumRow = []
+        newSquareSumRow = []
+        sumsList.append(newSumRow)
+        squareSumsList.append(newSquareSumRow)
+        for datum in row:
+            newSumRow.append(datum)
+            newSquareSumRow.append(datum ** 2)
 
     for i in range(2, attemptCount + 1):
+        nextPath = path + str(i)
+        [_, __, nextDataList] = csv_handler.extract_from_csv(nextPath)
 
-        with open(path + str(i) + '.csv') as nextData:
-            reader = csv.reader(nextData)
-            next(reader)
+        for j, row in enumerate(nextDataList):
+            for k, datum in enumerate(row):
+                sumsList[j][k] = sumsList[j][k] + datum
+                squareSumsList[j][k] = squareSumsList[j][k] + (datum ** 2)
 
-            for j, row in enumerate(reader):
-                for k, datum in enumerate(row[1:]):
-
-                    sumsList[j][k] = sumsList[j][k] + float(datum)
-                    squaresumsList[j][k] = squaresumsList[j][k] + float(datum) ** 2
 
     for i, row in enumerate(sumsList):
         errors.append([])
         averages.append([])
         for j, datum in enumerate(row):
             average = datum / attemptCount
-            error = ((squaresumsList[i][j] / attemptCount) - (average ** 2)) ** 0.5
+            error = ((squareSumsList[i][j] / attemptCount) - (average ** 2)) ** 0.5
             errors[i].append(error)
             averages[i].append(average)
 
+    avePath = path + 'average'
+    errorPath = path + 'error'
 
-
-    with open(path + 'average' + '.csv', 'w', newline = '') as ave:
-
-        aveWriter = csv.writer(ave)
-
-        aveWriter.writerow([labels[0]] + times)
-
-        for i, row in enumerate(averages):
-            aveWriter.writerow([labels[i + 1]] + row)
-
-    with open(path + 'error' + '.csv', 'w', newline = '') as error:
-
-        errorWriter = csv.writer(error)
-
-        errorWriter.writerow([labels[0]] + times)
-
-        for i, row in enumerate(errors):
-            errorWriter.writerow([labels[i + 1]] + row)
+    csv_handler.export_to_csv(times, labels, averages, avePath)
+    csv_handler.export_to_csv(times, labels, errors, errorPath)
 
 def make_invasion_ratios(epithelialPopCount, attemptCount, path):
 
@@ -234,7 +200,7 @@ def make_invasion_ratios(epithelialPopCount, attemptCount, path):
 
     for i in range(1, attemptCount + 1):
         realPath = path + str(i)
-        [times, labels, dataList] = extract_from_csv(realPath)
+        [times, labels, dataList] = csv_handler.extract_from_csv(realPath)
         timeCount = len(times)
         popCount = len(dataList)
 
@@ -267,34 +233,80 @@ def make_invasion_ratios(epithelialPopCount, attemptCount, path):
         IRAverages.append(statistics.mean(row))
         IRErrors.append(statistics.stdev(row))
 
-    export_to_csv(times, ['time', 'ave', 'stdev'], [IRAverages, IRErrors], path + 'invasion_ratios')
+    csv_handler.export_to_csv(times, ['time', 'ave', 'stdev'], [IRAverages, IRErrors], path + 'invasion_ratios')
 
-def make_IR_graph(conditionCount, path):
+def stealth_IR_graph(conditionLabels, path, name = ''):
 
     averagesList = []
     errorsList = []
-    labels = []
+    labels = conditionLabels
 
 
-    for i in range(1, conditionCount + 1):
-        conditionPath = path + 'condition_' + str(i) + '/'
-        f = open(conditionPath + 'condition.txt')
-        labels.append(f.read())
-        f.close()
+    for conditionLabel in conditionLabels:
+        conditionPath = path + conditionLabel + '/'
 
-        [times, _, dataList] = extract_from_csv(conditionPath + 'invasion_ratios')
+
+
+        [times, _, dataList] = csv_handler.extract_from_csv(conditionPath + 'invasion_ratios')
         averagesList.append(dataList[0])
         errorsList.append(dataList[1])
 
 
-    g = graph.Graph(times, averagesList, errorsList, labels)
+    g = graph.Graph(times, averagesList, errorsList, labels, name = name)
+    return g
+
+def make_IR_graph(conditionLabels, path, name = ''):
+
+    g = stealth_IR_graph(conditionLabels, path, name = name)
     g.save_graph(path + 'invasion_ratios_graph')
     g.save_log_graph(path + 'invasion_ratios_graph_log')
 
+def make_bad_IR_graph(epithelialPopCount, conditionLabels, path):
+    invasionRatiosList = []
+    logIRsList = []
+    errorsList = []
+    for conditionLabel in conditionLabels:
+        conditionPath = path + conditionLabel + '/'
+        [times, _, dataList] = csv_handler.extract_from_csv(conditionPath + 'average')
+        invasionRatios = []
+        logIRs = []
+        errors = []
+        epithelialCounts = []
+        endothelialCounts = []
+        for i, data in enumerate(dataList):
+
+            for j, datum in enumerate(data):
+                if i == 0:
+                    epithelialCounts.append(0)
+                    endothelialCounts.append(0)
+
+                if i < epithelialPopCount:
+                    epithelialCounts[j] = epithelialCounts[j] + datum
+                else:
+                    endothelialCounts[j] = endothelialCounts[j] + datum
+
+        for i in range(len(dataList[0])):
+            unscaledIR = endothelialCounts[i] / epithelialCounts[i]
+            if i == 0:
+                scale = 1 / unscaledIR
+            IR = unscaledIR * scale
+            invasionRatios.append(IR)
+            logIRs.append(math.log(IR, 2))
+            errors.append(0)
+        invasionRatiosList.append(invasionRatios)
+        logIRsList.append(logIRs)
+        errorsList.append(errors)
+
+    g = graph.Graph(times, invasionRatiosList, errorsList, conditionLabels)
+    g.save_no_errors_graph(path + 'bad_invasion_ratios_graph')
+    g2 = graph.Graph(times, logIRsList, errorsList, conditionLabels)
+    g2.save_no_errors_graph(path + 'bad_invasion_ratios_graph_log')
+
+
 def make_average_graphs(path):
 
-    [times, labels, averagesList] = extract_from_csv(path + 'average')
-    [timesDupe, labelsDupe, errorsList] = extract_from_csv(path + 'error')
+    [times, labels, averagesList] = csv_handler.extract_from_csv(path + 'average')
+    [timesDupe, labelsDupe, errorsList] = csv_handler.extract_from_csv(path + 'error')
 
     ymax = 0
     for i, row in enumerate(averagesList):
@@ -307,21 +319,65 @@ def make_average_graphs(path):
     g.save_graph(path = path + 'graph', ymax = ymax)
     g.save_log_graph(path = path + 'graph_log')
 
+#
 
+def analyse_bio_data(path):
+    conditionLabels = csv_handler.extract_line_from_csv(path + 'condition names')
+
+    for conditionLabel in conditionLabels:
+        conditionPath = path + conditionLabel + '/'
+
+
+        attemptCount = 0
+        while True:
+            try:
+                csv_handler.extract_from_csv(conditionPath + str(attemptCount + 1))
+            except:
+                break
+
+            attemptCount += 1
+
+        make_averages_of_csvs(attemptCount, conditionPath)
+        make_invasion_ratios(1, attemptCount, conditionPath)
+
+    make_IR_graph(conditionLabels, path)
+    make_bad_IR_graph(1, conditionLabels, path)
+
+def make_comparison_graph(modelMatrix, pathMatrix, conditionLabels, shortNames, path):
+    h = len(pathMatrix)
+    w = len(pathMatrix[0])
+    graphsList = []
+    for i in range(h):
+        graphsList.append([])
+        for j in range(w):
+            tempPath = pathMatrix[i][j]
+            name = shortNames[i][j]
+            g = stealth_IR_graph(conditionLabels, tempPath, name = name)
+            graphsList[i].append(g)
+
+    sg = graph.SuperGraph(graphsList)
+    sg.save(path)
+    print(path)
 #actually call the file from the command line
 
 def main():
-    path = 'output_files/test/'
+    path = 'output_files/sims/'
     duration = 6
-    swapTimesList = [[0], [2], [0, 2], [0, 4], []]
-    conditionLabels = ['All stretch', 'D2-D6 stretch', 'D0-D2 stretch', 'D0-D4 stretch', 'No stretch']
-    attemptCount = 2
-    dataCount = 3
+    swapTimesList = [[0], [], [0, 2], [2], [0, 4]]
+    conditionLabels = ['D0-D6 Stretched',
+    'D0-D6 Not Stretched',
+    'D0-D2 Stretched, D2-D6 Not Stretched',
+    'D0-D2 Not Stretched, D2-D6 Stretched',
+    'D0-D4 Stretched, D4-D6 Not Stretched']
 
+    attemptCount = 100
+    dataCount = 3
 
     model1 = make_a_three_pop_inheritable_log()
     model2 = make_a_three_pop_noninheritable_log()
     model3 = make_a_two_pop_log()
+    model4 = make_a_reversible_inheritable()
+    model5 = make_a_reversible_half_inheritable()
 
     models = [model1, model2, model3]
     epithelialPopCounts = [2, 2, 1]
@@ -333,21 +389,53 @@ def main():
         modelPath = path + model.name + '/'
         print(model.name)
         try:
-            os.mkdir(path + model.name + '/')
+            os.mkdir(modelPath)
         except:
+            print(modelPath + ' failed to make')
             pass
-
-        make_many_conditions_csvs(model, duration, swapTimesList, conditionLabels, dataCount, attemptCount, modelPath)
+        csv_handler.export_line_to_csv(conditionLabels, modelPath + 'condition names')
+        #make_many_conditions_csvs(model, duration, swapTimesList, conditionLabels, dataCount, attemptCount, modelPath)
 
 
     for i, model in enumerate(models):
         modelPath = path + model.name + '/'
-        for j in range(1, conditionCount + 1):
-            conditionPath = modelPath + 'condition_' + str(j) + '/'
+        for j in range(conditionCount):
+            conditionPath = modelPath + conditionLabels[j] + '/'
             make_averages_of_csvs(attemptCount, conditionPath)
             make_invasion_ratios(epithelialPopCounts[i], attemptCount, conditionPath)
             make_average_graphs(conditionPath)
-        make_IR_graph(conditionCount, modelPath)
+
+        make_IR_graph(conditionLabels, modelPath, name = model.name)
+        make_bad_IR_graph(epithelialPopCounts[i], conditionLabels, modelPath)
+
+def main2():
+    path = 'output_files/bio_data/'
+    analyse_bio_data(path)
+
+def main3():
+
+    conditionLabels = conditionLabels = ['D0-D6 Stretched',
+    'D0-D6 Not Stretched',
+    'D0-D2 Stretched, D2-D6 Not Stretched',
+    'D0-D2 Not Stretched, D2-D6 Stretched',
+    'D0-D4 Stretched, D4-D6 Not Stretched']
+
+    modelMatrix = [['bio', 'ThreePopLogisticInheritable', 'Reversible Inheritable'],
+    ['TwoPopLogistic', 'ThreePopLogisticNonInheritable', 'Reversible Half-inheritable']]
+    shortNames = [['bio', 'I', 'R'], ['2', 'HI', 'RHI']]
+
+    path = 'output_files/'
+    pathMatrix = []
+    for i in range(2):
+        pathMatrix.append([])
+        for j in range(3):
+            if i == 0 and j == 0:
+                pathMatrix[i].append(path + 'bio_data/')
+            else:
+                pathMatrix[i].append(path + 'sims/' + modelMatrix[i][j] + '/')
+    path = path + 'sims/comparison'
+    make_comparison_graph(modelMatrix, pathMatrix, conditionLabels, shortNames, path)
+
 
 if __name__ == "__main__":
     main()

@@ -110,8 +110,6 @@ class Model:
             totalRate += event.get_rate()
         return totalRate;
 
-
-
     # functions for changing/creating the model:
 
     def add_population(self, pop):
@@ -151,6 +149,7 @@ class Model:
     def get_random_event(self):
 
         r = random.random()*self.get_total_rate()
+
         for currentEvent in self.get_events():
             currentRate = currentEvent.get_rate()
             if r <= currentRate:
@@ -211,7 +210,7 @@ class Model:
 
         self.interval_run(historyTimes)
 
-    # functions for results analysis
+    # functions for results analysis - all are useless at this point
 
     def make_history_graph(self, graphName = ''):
         #self.fig.savefig(filename, transparent=False, dpi=160, bbox_inches="tight")
@@ -341,8 +340,9 @@ class ToggleModel(Model):
         self.interval_run(intervalTimes, isAToggles)
 
     def interval_run(self, intervalTimes, isAToggles):
+        print('starting simulation')
         print(intervalTimes)
-        print(isAToggles)
+
         intervalCount = len(intervalTimes)
         lastTime = 0
 
@@ -357,7 +357,7 @@ class ToggleModel(Model):
                 self.empty_run(duration)
 
             lastTime = time
-
+        print('ending simulation')
 
 class SimpleEvent(Event):
     def __init__(self, populations, changes, rate, proportionalPop):

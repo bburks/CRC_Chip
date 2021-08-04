@@ -332,3 +332,91 @@ class ThreePopLogisticInheritable(model.ToggleModel):
         events.extend([growToGo, goToGone])
 
         super().__init__(pops, events, [growToGo], name = 'ThreePopLogisticInheritable')
+
+# now we incorporate the backwards error go -> grow. Still logistically toggled.
+
+class ReversibleInheritable(model.ToggleModel):
+    def __init__(self, params):
+
+        birthRateHigh = params.get('higher birthrate')
+        birthRateLow = params.get('lower birthrate')
+        swapCount = params.get('birthrate swaps at')
+
+        deathRate = params.get('deathrate')
+
+        transferDefaultRate = params.get('grow to go')
+        transferPeristalsisRate = params.get('grow to go peristalsis')
+        transferReturnRate = params.get('go to grow')
+        intravasationRate = params.get('go to gone')
+
+        startingGrow = params.get('starting grow')
+        startingGo = params.get('starting go')
+        startingGone = params.get('starting gone')
+
+
+        growPop = model.Population(startingGrow, label = 'grow')
+        goPop = model.Population(startingGo, label = 'go')
+        gonePop = model.Population(startingGone, label = 'gone')
+
+        pops = [growPop, goPop, gonePop]
+
+        events = []
+        for pop in pops:
+            death = model.SimpleDeath(pop, deathRate)
+            if pop == gonePop:
+                birth = LogisticToggleBirth(pop, pop, [gonePop], birthRateHigh, birthRateLow, swapCount)
+            else:
+                birth = LogisticToggleBirth(pop, pop, [growPop, goPop], birthRateHigh, birthRateLow, swapCount)
+            events.extend([birth, death])
+
+        growToGo = model.SimpleToggleTransfer(growPop, goPop, transferDefaultRate, transferPeristalsisRate)
+        goToGone = model.SimpleTransfer(goPop, gonePop, intravasationRate)
+        goToGrow = model.SimpleTransfer(goPop, growPop, transferReturnRate)
+
+        events.extend([growToGo, goToGone, goToGrow])
+
+        super().__init__(pops, events, [growToGo], name = 'Reversible Inheritable')
+
+class ReversibleHalfInheritable(model.ToggleModel):
+    def __init__(self, params):
+
+        birthRateHigh = params.get('higher birthrate')
+        birthRateLow = params.get('lower birthrate')
+        swapCount = params.get('birthrate swaps at')
+
+        deathRate = params.get('deathrate')
+
+        transferDefaultRate = params.get('grow to go')
+        transferPeristalsisRate = params.get('grow to go peristalsis')
+        transferReturnRate = params.get('go to grow')
+        intravasationRate = params.get('go to gone')
+
+        startingGrow = params.get('starting grow')
+        startingGo = params.get('starting go')
+        startingGone = params.get('starting gone')
+
+
+        growPop = model.Population(startingGrow, label = 'grow')
+        goPop = model.Population(startingGo, label = 'go')
+        gonePop = model.Population(startingGone, label = 'gone')
+
+        pops = [growPop, goPop, gonePop]
+
+        events = []
+        for pop in pops:
+            death = model.SimpleDeath(pop, deathRate)
+            if pop == gonePop:
+                birth = LogisticToggleBirth(pop, pop, [gonePop], birthRateHigh, birthRateLow, swapCount)
+            else:
+                birth = LogisticToggleBirth(pop, growPop, [growPop, goPop], birthRateHigh, birthRateLow, swapCount)
+            events.extend([birth, death])
+
+        growToGo = model.SimpleToggleTransfer(growPop, goPop, transferDefaultRate, transferPeristalsisRate)
+        goToGrow = model.SimpleTransfer(goPop, growPop, transferReturnRate)
+        goToGone = model.SimpleTransfer(goPop, gonePop, intravasationRate)
+        events.extend([growToGo, goToGone])
+
+        super().__init__(pops, events, [growToGo], name = 'Reversible Half-Inheritable')
+
+class ReversibleNonInheritable(model.ToggleModel):
+    pass
