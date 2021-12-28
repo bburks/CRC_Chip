@@ -1,0 +1,22 @@
+We simulated using the following parameters:
+
+times = [0, 2, 4, 6]
+
+[p1, p2] = [1000, 100]
+measurement error = 0.1
+growth = 1
+
+l12 = (0.1, 1) (10 values)
+l12 = (0.1, 1) (10 values)
+
+ranges: 
+l12, l21: (0, 1)
+growth (0, 10)
+measurement error: (0, 1)
+
+
+
+For each of these 100 parameter choices, we simulated 10 replicates, then performed MLE from a random starting point in the ranges given to find the optimal parameters. 
+For each of the 100 simulations, only one starting point was required in order to find parameters with a likelihood higher than the likelihood of parameters used to simulate the data.
+
+This image shows the average (RMS) distance of 4 found parameters from the four actual parameters (normalized to their size)

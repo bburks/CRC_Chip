@@ -133,6 +133,9 @@ class Graph:
 
         return newGraph
 
+
+# this does not work right now. Can delete if desired. Intended to help make
+# comparisons of data (multiple graphs on one image)
 class SuperGraph:
     def __init__(self, graphsList):
         self.w = len(graphsList[0])

@@ -1,0 +1,6 @@
+condition,0-2,2-4,4-6,count
+D0-D6 Stretched,True,True,True,4
+D0-D6 Not Stretched,False,False,False,4
+"D0-D2 Stretched, D2-D6 Not Stretched",True,False,False,6
+"D0-D2 Not Stretched, D2-D6 Stretched",False,True,True,6
+"D0-D4 Stretched, D4-D6 Not Stretched",True,True,False,4

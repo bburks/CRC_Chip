@@ -6,6 +6,8 @@ import csv
 import copy
 
 
+
+
 """When implementing a model, first create populations, then create events.
 Combine populations and events into a model.
 
@@ -21,8 +23,6 @@ increases by one while another decreases by one.
 -SimpleToggleEvent and SimpleToggleTransfer include a possibility that the rate
 could change over time
 """
-
-
 
 class Population:
 
@@ -244,43 +244,6 @@ class Model:
             for pop in self.get_populations():
                 csvWriter.writerow([pop.label] + pop.get_history())
 
-
-# this class is not getting used but could be helpful in better organizing
-# results
-
-class SimulationData:
-
-    def __init__(self, times, populationLabels, populationData):
-        self.times = times
-        self.labels = populationLabels
-        self.data = populationData
-
-    def make_a_zero_copy(self):
-        times = self.times
-        labels = self.labels
-
-        data = copy.deepcopy(self.data)
-
-        for list in data:
-            l = len(list)
-            for i in range(l):
-                list[l] = 0
-
-        return SimulationData(times, labels, data)
-
-    def make_graph(self, errors = 'unwritten', path = 'output_files/defaultOutputGraph', graphName = ''):
-
-        if errors == 'unwritten':
-            errors = self.make_a_zero_copy()
-
-        xdata = self.times
-        ydatas = self.data
-        errors = errors.data
-        labels = self.labels
-
-        g = graph.Graph(xdata, ydatas, errors, labels, xlabel = 'time', ylabel = 'population count', name = graphName)
-        g.save_graph(path)
-        return g
 
 
 class ToggleModel(Model):

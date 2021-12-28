@@ -125,7 +125,7 @@ def make_one_csv(model, duration, swapTimes, dataCount, path):
         labels.append(pop.get_label())
         dataList.append(pop.get_history())
 
-    csv_handler.export_to_csv(times, labels, dataList, path)
+    csv_handler.export(times, labels, dataList, path)
 
 def make_many_csvs(model, duration, swapTimes, dataCount, attemptCount, path):
     for i in range(attemptCount):
@@ -133,7 +133,7 @@ def make_many_csvs(model, duration, swapTimes, dataCount, attemptCount, path):
 
 def make_many_conditions_csvs(model, duration, swapTimesList, conditionLabels, dataCount, attemptCount, path):
 
-    csv_handler.export_line_to_csv(conditionLabels, path + 'condition names')
+    csv_handler.export(conditionLabels, path + 'condition names')
 
     for i, swapTimes in enumerate(swapTimesList):
 
@@ -191,8 +191,8 @@ def make_averages_of_csvs(attemptCount, path):
     avePath = path + 'average'
     errorPath = path + 'error'
 
-    csv_handler.export_to_csv(times, labels, averages, avePath)
-    csv_handler.export_to_csv(times, labels, errors, errorPath)
+    csv_handler.export(times, labels, averages, avePath)
+    csv_handler.export(times, labels, errors, errorPath)
 
 def make_invasion_ratios(epithelialPopCount, attemptCount, path):
 
@@ -233,7 +233,7 @@ def make_invasion_ratios(epithelialPopCount, attemptCount, path):
         IRAverages.append(statistics.mean(row))
         IRErrors.append(statistics.stdev(row))
 
-    csv_handler.export_to_csv(times, ['time', 'ave', 'stdev'], [IRAverages, IRErrors], path + 'invasion_ratios')
+    csv_handler.export(times, ['time', 'ave', 'stdev'], [IRAverages, IRErrors], path + 'invasion_ratios')
 
 def stealth_IR_graph(conditionLabels, path, name = ''):
 
@@ -393,7 +393,7 @@ def main():
         except:
             print(modelPath + ' failed to make')
             pass
-        csv_handler.export_line_to_csv(conditionLabels, modelPath + 'condition names')
+        csv_handler.export_line(conditionLabels, modelPath + 'condition names')
         #make_many_conditions_csvs(model, duration, swapTimesList, conditionLabels, dataCount, attemptCount, modelPath)
 
 

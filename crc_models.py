@@ -375,6 +375,7 @@ class ReversibleInheritable(model.ToggleModel):
 
         events.extend([growToGo, goToGone, goToGrow])
 
+
         super().__init__(pops, events, [growToGo], name = 'Reversible Inheritable')
 
 class ReversibleHalfInheritable(model.ToggleModel):
